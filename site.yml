@@ -23,13 +23,49 @@
   become: true
   tasks:
 
-  - name: install apache on web servers
+  - name: install apache on web servers (ubuntu)
     tags: apache,ubuntu
     ansible.builtin.apt:
       name:
       - apache2
       - libapache2-mod-php
     when: ansible_facts["os_family"] == "Debian"
+
+  - name: install apache on web servers (fedora)
+    tags: apache,fedora
+    ansible.builtin.dnf:
+      name: httpd
+    when: ansible_facts["os_family"] == "RedHat"
+
+  - name: ensure apache is running (ubuntu)
+    tags: apache,ubuntu
+    ansible.builtin.service:
+      name: apache2
+      state: started
+    when: ansible_facts["os_family"] == "Debian"
+
+  - name: ensure apache is running (fedora)
+    tags: apache,fedora
+    ansible.builtin.service:
+      name: httpd
+      state: started
+    when: ansible_facts["os_family"] == "RedHat"
+
+  - name: change email address for admin
+    tags: apache,fedora
+    ansible.builtin.lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_facts["os_family"] == "RedHat"
+    register: httpd
+
+  - name: restart httpd (fedora)
+    tags: apache,fedora
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
 
   - name: copy html file for site
     tags: apache,ubuntu
